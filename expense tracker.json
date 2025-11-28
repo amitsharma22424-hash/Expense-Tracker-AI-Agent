@@ -1,0 +1,308 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "loadPreviousSession": "memory"
+        }
+      },
+      "id": "46b7196a-2e2a-4fb5-9d4b-27cd49e87a04",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        416,
+        256
+      ],
+      "webhookId": "3cdd9c18-350f-43b9-b6b7-badbc24a9396"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}"
+      },
+      "id": "6325c460-3b8d-4d66-959d-dce1ffaf5a1d",
+      "name": "Conversation Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        496,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "8463d6cd-5491-4dc3-adb4-a6dcf193b426",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        784,
+        480
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "O7TskFtxwBDiFwlE",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"description\": \"Lunch at restaurant\",\n  \"cost\": \"25.50\",\n  \"date\": \"2024-01-15\",\n  \"type\": \"food\",\n  \"sessionid\": \"\",\n  \"action\": \"record\",\n  \"chatInput\": \"I spent 25.50 on lunch today\"\n}"
+      },
+      "id": "46ce1c0b-a198-474c-9885-7f0a2c525c54",
+      "name": "JSON Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        912,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an Expense Manager AI assistant. Your job is to extract expense information from the user's message and return clean, structured JSON.\n\nRULES:\n\n1. Always identify:\n   - description: What the expense was for\n   - cost: The amount (as string)\n   - date: When it occurred (if not given, use today's date in YYYY-MM-DD format)\n   - type: Category - must be one of: food, travel, grocery, shopping, other\n\n2. Category mapping:\n   - food → food, lunch, breakfast, dinner, snacks, restaurant, cafe\n   - travel → auto, bus, cab, taxi, uber, fuel, petrol, gas, train, flight\n   - shopping → clothes, shoes, accessories, electronics\n   - grocery → fruits, vegetables, household items, supermarket\n   - other → anything else\n\n3. Always include:\n   - sessionid: Extract from user message if mentioned, otherwise empty string\n   - action: Set to \"record\" for expense entries\n   - chatInput: Copy the exact user message\n\n4. If user asks something that is NOT an expense (questions, greetings, etc.), return:\n   {\n     \"action\": \"other\",\n     \"chatInput\": \"[user's message]\"\n   }\n\n5. If multiple expenses in one message, create separate entries for each.\n\n6. Return ONLY valid JSON. No explanations, no text, no markdown."
+        }
+      },
+      "id": "1a5fecb6-0792-4f24-b366-2a51a7af10cd",
+      "name": "Expense Extraction Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        768,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "record",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c1f4fce9-b21e-42e1-abc2-4c5733048975",
+      "name": "Check if Expense Record",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "10q_0EW0hn8lrmZZvDuWakOPFLxIEs0EALHuFekNd9iI",
+          "mode": "list",
+          "cachedResultName": "AI on Expense Tracker Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10q_0EW0hn8lrmZZvDuWakOPFLxIEs0EALHuFekNd9iI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10q_0EW0hn8lrmZZvDuWakOPFLxIEs0EALHuFekNd9iI/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Description": "={{ $json.output.description }}",
+            "Cost": "={{ $json.output.cost }}",
+            "Date": "={{ $json.output.date }}",
+            "Type": "={{ $json.output.type }}",
+            "Sessionid": "={{ $json.output.sessionid }}",
+            "Action": "={{ $json.output.action }}",
+            "Chatinput": "={{ $json.output.chatInput }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cost",
+              "displayName": "Cost",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Type",
+              "displayName": "Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sessionid",
+              "displayName": "Sessionid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Action",
+              "displayName": "Action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Chatinput",
+              "displayName": "Chatinput",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "5af7be1f-119f-48e6-a272-586d624c63ac",
+      "name": "Add Expense to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1488,
+        256
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "hKyaaBa6yUKEhoPi",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Expense Extraction Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "When chat message received",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Expense Extraction Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Expense Extraction Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Expense Extraction Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expense Extraction Agent": {
+      "main": [
+        [
+          {
+            "node": "Check if Expense Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Expense Record": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Add Expense to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cdc03f2d3d1172995853126707c0d61ad0b36239a74258527bccac795f3c7656"
+  }
+}
